@@ -104,12 +104,7 @@ function Row(props: RowProps) {
       </TableCell>
       <TableCell>{task.type}</TableCell>
       <TableCell>
-        <SyntaxHighlighter
-          language="json"
-          customStyle={{ margin: 0, maxWidth: 400 }}
-        >
-          {prettifyPayload(task.payload)}
-        </SyntaxHighlighter>
+        {task.type}
       </TableCell>
       <TableCell>
         {task.canceling

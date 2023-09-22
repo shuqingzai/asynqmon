@@ -116,11 +116,23 @@ function Row(props: RowProps) {
       </TableCell>
       <TableCell>{task.type}</TableCell>
       <TableCell>
+        <Tooltip title="Copy full payload to clipboard">
+          <IconButton
+              onClick={(e) => {
+                e.stopPropagation();
+                navigator.clipboard.writeText(task.payload);
+              }}
+              size="small"
+              className={classes.copyButton}
+          >
+            <FileCopyOutlinedIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
         <SyntaxHighlighter
-          language="json"
-          customStyle={{ margin: 0, maxWidth: 400 }}
+            language="json"
+            customStyle={{ margin: 0, maxWidth: 400 }}
         >
-          {prettifyPayload(task.payload)}
+          {task.payload.length > 100 ?  "payload body too long, please click to view details"  : prettifyPayload(task.payload)}
         </SyntaxHighlighter>
       </TableCell>
       <TableCell>{durationBefore(task.next_process_at)}</TableCell>

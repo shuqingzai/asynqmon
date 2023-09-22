@@ -18,7 +18,15 @@ import { TaskDetailsRouteParams } from "../paths";
 import { usePolling } from "../hooks";
 import { listQueuesAsync } from "../actions/queuesActions";
 import SyntaxHighlighter from "../components/SyntaxHighlighter";
-import { durationFromSeconds, stringifyDuration, timeAgo, prettifyPayload } from "../utils";
+import {
+  durationFromSeconds,
+  stringifyDuration,
+  timeAgo,
+  prettifyPayload,
+} from "../utils";
+import Tooltip from "@material-ui/core/Tooltip";
+import IconButton from "@material-ui/core/IconButton";
+import FileCopyOutlinedIcon from "@material-ui/icons/FileCopyOutlined";
 
 function mapStateToProps(state: AppState) {
   return {
@@ -65,6 +73,9 @@ const useStyles = makeStyles((theme) => ({
     paddingTop: theme.spacing(3),
     paddingBottom: theme.spacing(3),
   },
+  copyButton: {
+    display: "none",
+  },
 }));
 
 type Props = ConnectedProps<typeof connector>;
@@ -89,216 +100,272 @@ function TaskDetailsView(props: Props) {
   }, [listQueuesAsync]);
 
   return (
-    <Container maxWidth="lg" className={classes.container}>
-      <Grid container spacing={0}>
-        <Grid item xs={12} className={classes.breadcrumbs}>
-          <QueueBreadCrumb
-            queues={props.queues}
-            queueName={qname}
-            taskId={taskId}
-          />
-        </Grid>
-        <Grid item xs={12} md={6}>
-          {props.error ? (
-            <Alert severity="error" className={classes.alert}>
-              <AlertTitle>Error</AlertTitle>
-              {props.error}
-            </Alert>
-          ) : (
-            <Paper className={classes.paper} variant="outlined">
-              <Typography variant="h6">Task Info</Typography>
-              <div>
-                <div className={classes.infoRow}>
-                  <Typography
-                    variant="subtitle2"
-                    className={classes.infoKeyCell}
-                  >
-                    ID:{" "}
-                  </Typography>
-                  <Typography className={classes.infoValueCell}>
-                    {taskInfo?.id}
-                  </Typography>
-                </div>
-                <div className={classes.infoRow}>
-                  <Typography
-                    variant="subtitle2"
-                    className={classes.infoKeyCell}
-                  >
-                    Type:{" "}
-                  </Typography>
-                  <Typography className={classes.infoValueCell}>
-                    {taskInfo?.type}
-                  </Typography>
-                </div>
-                <div className={classes.infoRow}>
-                  <Typography
-                    variant="subtitle2"
-                    className={classes.infoKeyCell}
-                  >
-                    State:{" "}
-                  </Typography>
-                  <Typography className={classes.infoValueCell}>
-                    {taskInfo?.state}
-                  </Typography>
-                </div>
-                <div className={classes.infoRow}>
-                  <Typography
-                    variant="subtitle2"
-                    className={classes.infoKeyCell}
-                  >
-                    Queue:{" "}
-                  </Typography>
-                  <Typography className={classes.infoValueCell}>
-                    {taskInfo?.queue}
-                  </Typography>
-                </div>
-                <div className={classes.infoRow}>
-                  <Typography
-                    variant="subtitle2"
-                    className={classes.infoKeyCell}
-                  >
-                    Retry:{" "}
-                  </Typography>
-                  <Typography className={classes.infoValueCell}>
-                    {taskInfo?.retried}/{taskInfo?.max_retry}
-                  </Typography>
-                </div>
-                <div className={classes.infoRow}>
-                  <Typography
-                    variant="subtitle2"
-                    className={classes.infoKeyCell}
-                  >
-                    Last Failure:{" "}
-                  </Typography>
-                  <Typography className={classes.infoValueCell}>
-                    {taskInfo?.last_failed_at ? (
-                      <Typography>
-                        {taskInfo?.error_message} ({taskInfo?.last_failed_at})
-                      </Typography>
-                    ) : (
-                      <Typography> - </Typography>
-                    )}
-                  </Typography>
-                </div>
-                <div className={classes.infoRow}>
-                  <Typography
-                    variant="subtitle2"
-                    className={classes.infoKeyCell}
-                  >
-                    Next Process Time:{" "}
-                  </Typography>
-                  {taskInfo?.next_process_at ? (
-                    <Typography>{taskInfo?.next_process_at}</Typography>
-                  ) : (
-                    <Typography> - </Typography>
-                  )}
-                </div>
-              </div>
-              <div className={classes.infoRow}>
-                <Typography variant="subtitle2" className={classes.infoKeyCell}>
-                  Timeout:{" "}
-                </Typography>
-                <Typography className={classes.infoValueCell}>
-                  {taskInfo?.timeout_seconds ? (
-                    <Typography>{taskInfo?.timeout_seconds} seconds</Typography>
-                  ) : (
-                    <Typography> - </Typography>
-                  )}
-                </Typography>
-              </div>
-              <div className={classes.infoRow}>
-                <Typography variant="subtitle2" className={classes.infoKeyCell}>
-                  Deadline:{" "}
-                </Typography>
-                <Typography className={classes.infoValueCell}>
-                  {taskInfo?.deadline ? (
-                    <Typography>{taskInfo?.deadline}</Typography>
-                  ) : (
-                    <Typography> - </Typography>
-                  )}
-                </Typography>
-              </div>
-              <div className={classes.infoRow}>
-                <Typography variant="subtitle2" className={classes.infoKeyCell}>
-                  Payload:{" "}
-                </Typography>
-                <div className={classes.infoValueCell}>
-                  {taskInfo?.payload && (
-                    <SyntaxHighlighter
-                      language="json"
-                      customStyle={{ margin: 0, maxWidth: 400 }}
-                    >
-                      {prettifyPayload(taskInfo.payload)}
-                    </SyntaxHighlighter>
-                  )}
-                </div>
-              </div>
-              {
-                /* Completed Task Only */ taskInfo?.state === "completed" && (
-                  <>
+      <Container maxWidth="lg" className={classes.container}>
+        <Grid container spacing={0}>
+          <Grid item xs={12} className={classes.breadcrumbs}>
+            <QueueBreadCrumb
+                queues={props.queues}
+                queueName={qname}
+                taskId={taskId}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            {props.error ? (
+                <Alert severity="error" className={classes.alert}>
+                  <AlertTitle>Error</AlertTitle>
+                  {props.error}
+                </Alert>
+            ) : (
+                <Paper className={classes.paper} variant="outlined">
+                  <Typography variant="h6">Task Info</Typography>
+                  <div>
                     <div className={classes.infoRow}>
                       <Typography
-                        variant="subtitle2"
-                        className={classes.infoKeyCell}
+                          variant="subtitle2"
+                          className={classes.infoKeyCell}
                       >
-                        Completed:{" "}
-                      </Typography>
-                      <div className={classes.infoValueCell}>
-                        <Typography>
-                          {timeAgo(taskInfo.completed_at)} (
-                          {taskInfo.completed_at})
-                        </Typography>
-                      </div>
-                    </div>
-                    <div className={classes.infoRow}>
-                      <Typography
-                        variant="subtitle2"
-                        className={classes.infoKeyCell}
-                      >
-                        Result:{" "}
-                      </Typography>
-                      <div className={classes.infoValueCell}>
-                        <SyntaxHighlighter
-                          language="json"
-                          customStyle={{ margin: 0, maxWidth: 400 }}
-                        >
-                          {prettifyPayload(taskInfo.result)}
-                        </SyntaxHighlighter>
-                      </div>
-                    </div>
-                    <div className={classes.infoRow}>
-                      <Typography
-                        variant="subtitle2"
-                        className={classes.infoKeyCell}
-                      >
-                        TTL:{" "}
+                        ID:{" "}
                       </Typography>
                       <Typography className={classes.infoValueCell}>
-                        <Typography>
-                          {taskInfo.ttl_seconds > 0
-                            ? `${stringifyDuration(
-                                durationFromSeconds(taskInfo.ttl_seconds)
-                              )} left`
-                            : "expired"}
-                        </Typography>
+                        {taskInfo?.id}
                       </Typography>
                     </div>
-                  </>
-                )
-              }
-            </Paper>
-          )}
-          <div className={classes.footer}>
-            <Button
-              startIcon={<ArrowBackIcon />}
-              onClick={() => history.goBack()}
-            >
-              Go Back
-            </Button>
-          </div>
+                    <div className={classes.infoRow}>
+                      <Typography
+                          variant="subtitle2"
+                          className={classes.infoKeyCell}
+                      >
+                        Type:{" "}
+                      </Typography>
+                      <Typography className={classes.infoValueCell}>
+                        {taskInfo?.type}
+                      </Typography>
+                    </div>
+                    <div className={classes.infoRow}>
+                      <Typography
+                          variant="subtitle2"
+                          className={classes.infoKeyCell}
+                      >
+                        State:{" "}
+                      </Typography>
+                      <Typography className={classes.infoValueCell}>
+                        {taskInfo?.state}
+                      </Typography>
+                    </div>
+                    <div className={classes.infoRow}>
+                      <Typography
+                          variant="subtitle2"
+                          className={classes.infoKeyCell}
+                      >
+                        Queue:{" "}
+                      </Typography>
+                      <Typography className={classes.infoValueCell}>
+                        {taskInfo?.queue}
+                      </Typography>
+                    </div>
+                    <div className={classes.infoRow}>
+                      <Typography
+                          variant="subtitle2"
+                          className={classes.infoKeyCell}
+                      >
+                        Retry:{" "}
+                      </Typography>
+                      <Typography className={classes.infoValueCell}>
+                        {taskInfo?.retried}/{taskInfo?.max_retry}
+                      </Typography>
+                    </div>
+                    <div className={classes.infoRow}>
+                      <Typography
+                          variant="subtitle2"
+                          className={classes.infoKeyCell}
+                      >
+                        Last Failure:{" "}
+                      </Typography>
+                      <Typography className={classes.infoValueCell}>
+                        {taskInfo?.last_failed_at ? (
+                            <Typography>
+                              {taskInfo?.error_message} ({taskInfo?.last_failed_at})
+                            </Typography>
+                        ) : (
+                            <Typography> - </Typography>
+                        )}
+                      </Typography>
+                    </div>
+                    <div className={classes.infoRow}>
+                      <Typography
+                          variant="subtitle2"
+                          className={classes.infoKeyCell}
+                      >
+                        Next Process Time:{" "}
+                      </Typography>
+                      {taskInfo?.next_process_at ? (
+                          <Typography>{taskInfo?.next_process_at}</Typography>
+                      ) : (
+                          <Typography> - </Typography>
+                      )}
+                    </div>
+                  </div>
+                  <div className={classes.infoRow}>
+                    <Typography variant="subtitle2" className={classes.infoKeyCell}>
+                      Timeout:{" "}
+                    </Typography>
+                    <Typography className={classes.infoValueCell}>
+                      {taskInfo?.timeout_seconds ? (
+                          <Typography>{taskInfo?.timeout_seconds} seconds</Typography>
+                      ) : (
+                          <Typography> - </Typography>
+                      )}
+                    </Typography>
+                  </div>
+                  <div className={classes.infoRow}>
+                    <Typography variant="subtitle2" className={classes.infoKeyCell}>
+                      Deadline:{" "}
+                    </Typography>
+                    <Typography className={classes.infoValueCell}>
+                      {taskInfo?.deadline ? (
+                          <Typography>{taskInfo?.deadline}</Typography>
+                      ) : (
+                          <Typography> - </Typography>
+                      )}
+                    </Typography>
+                  </div>
+                  <div className={classes.infoRow} style={{ marginBottom: 15 }}>
+                    <Typography variant="subtitle2" className={classes.infoKeyCell}>
+                      Payload:{" "}
+                      {
+                        taskInfo?.payload
+                        && taskInfo.payload != "non-printable bytes"
+                        && (
+                            <div style={{ marginTop: 5 }}>
+                              <Button
+                                  title={"Copy full payload to clipboard"}
+                                  variant="outlined"
+                                  size="small"
+                                  onClick={() => {
+                                    // 复制到剪贴板
+                                    navigator.clipboard.writeText(prettifyPayload(taskInfo.payload)).then(() => {
+                                      console.log("复制成功");
+                                    },(err) => {
+                                      console.log("复制失败", err);
+                                    });
+                                  }}
+                              >
+                                复制
+                              </Button>
+                            </div>
+                          )
+                      }
+                    </Typography>
+                    <div className={classes.infoValueCell}>
+                      {taskInfo?.payload && (
+                          <SyntaxHighlighter
+                              language="json"
+                              customStyle={{
+                                margin: 0,
+                                minWidth: 400,
+                                maxWidth: 1000,
+                                maxHeight: 500,
+                              }}
+                          >
+                            {prettifyPayload(taskInfo.payload)}
+                          </SyntaxHighlighter>
+                      )}
+                    </div>
+                  </div>
+                  {
+                    /* Completed Task Only */ taskInfo?.state === "completed" && (
+                      <>
+                        <div className={classes.infoRow}>
+                          <Typography
+                              variant="subtitle2"
+                              className={classes.infoKeyCell}
+                          >
+                            Completed:{" "}
+                          </Typography>
+                          <div className={classes.infoValueCell}>
+                            <Typography>
+                              {timeAgo(taskInfo.completed_at)} (
+                              {taskInfo.completed_at})
+                            </Typography>
+                          </div>
+                        </div>
+                        <div className={classes.infoRow} style={{ marginBottom: 15 }}>
+                          <Typography
+                              variant="subtitle2"
+                              className={classes.infoKeyCell}
+                          >
+                            Result Payload:{" "}
+                            {
+                                taskInfo?.result.length > 0
+                                &&  taskInfo.result != "non-printable bytes"
+                                && (
+                                    <div style={{ marginTop: 5 }}>
+                                      <Button
+                                          title={"Copy full Result Payload to clipboard"}
+                                          variant="outlined"
+                                          size="small"
+                                          onClick={() => {
+                                            // 复制到剪贴板
+                                            navigator.clipboard.writeText(prettifyPayload(taskInfo.result)).then(() => {
+                                              console.log("复制成功");
+                                            },(err) => {
+                                              console.log("复制失败", err);
+                                            });
+                                          }}
+                                      >
+                                        复制
+                                      </Button>
+                                    </div>
+                                )
+                            }
+                          </Typography>
+                          <div className={classes.infoValueCell}>
+                            <SyntaxHighlighter
+                                language="json"
+                                customStyle={{
+                                  margin: 0,
+                                  minWidth: 400,
+                                  maxWidth: 1000,
+                                  maxHeight: 500,
+                                }}
+                            >
+                              {prettifyPayload(taskInfo.result)}
+                            </SyntaxHighlighter>
+                          </div>
+                        </div>
+                        <div className={classes.infoRow}>
+                          <Typography
+                              variant="subtitle2"
+                              className={classes.infoKeyCell}
+                          >
+                            TTL:{" "}
+                          </Typography>
+                          <Typography className={classes.infoValueCell}>
+                            <Typography>
+                              {taskInfo.ttl_seconds > 0
+                                  ? `${stringifyDuration(
+                                      durationFromSeconds(taskInfo.ttl_seconds)
+                                  )} left`
+                                  : "expired"}
+                            </Typography>
+                          </Typography>
+                        </div>
+                      </>
+                  )
+                  }
+                </Paper>
+            )}
+            <div className={classes.footer}>
+              <Button
+                  startIcon={<ArrowBackIcon />}
+                  onClick={() => history.goBack()}
+              >
+                Go Back
+              </Button>
+            </div>
+          </Grid>
         </Grid>
-      </Grid>
-    </Container>
+      </Container>
   );
 }
 
