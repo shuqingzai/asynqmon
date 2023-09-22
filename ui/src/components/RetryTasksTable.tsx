@@ -134,7 +134,7 @@ function Row(props: RowProps) {
         </Tooltip>
         <SyntaxHighlighter
             language="json"
-            customStyle={{ margin: 0, maxWidth: 400 }}
+            customStyle={{ margin: 0, maxWidth: 300 }}
         >
           {task.payload.length > 100 ?  "payload body too long, please click to view details"  : prettifyPayload(task.payload)}
         </SyntaxHighlighter>

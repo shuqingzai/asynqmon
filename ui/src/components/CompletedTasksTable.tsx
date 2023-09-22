@@ -124,16 +124,28 @@ function Row(props: RowProps) {
         </Tooltip>
           <SyntaxHighlighter
               language="json"
-              customStyle={{ margin: 0, maxWidth: 400 }}
+              customStyle={{ margin: 0, maxWidth: 300 }}
           >
             {task.payload.length > 100 ?  "payload body too long, please click to view details"  : prettifyPayload(task.payload)}
           </SyntaxHighlighter>
       </TableCell>
       <TableCell>{timeAgo(task.completed_at)}</TableCell>
       <TableCell>
+        <Tooltip title="Copy full Result payload to clipboard">
+          <IconButton
+              onClick={(e) => {
+                e.stopPropagation();
+                navigator.clipboard.writeText(task.result);
+              }}
+              size="small"
+              className={classes.copyButton}
+          >
+            <FileCopyOutlinedIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
         <SyntaxHighlighter
           language="json"
-          customStyle={{ margin: 0, maxWidth: 400 }}
+          customStyle={{ margin: 0, maxWidth: 300 }}
         >
           {prettifyPayload(task.result)}
         </SyntaxHighlighter>
