@@ -13,7 +13,12 @@ import ArrowBackIcon from "@material-ui/icons/ArrowBack";
 import { useParams } from "react-router-dom";
 import QueueBreadCrumb from "../components/QueueBreadcrumb";
 import { AppState } from "../store";
-import { getTaskInfoAsync } from "../actions/tasksActions";
+import {
+  getTaskInfoAsync,
+  runScheduledTaskAsync,
+  archiveScheduledTaskAsync,
+  deleteScheduledTaskAsync,
+} from "../actions/tasksActions";
 import { TaskDetailsRouteParams } from "../paths";
 import { usePolling } from "../hooks";
 import { listQueuesAsync } from "../actions/queuesActions";
@@ -24,9 +29,9 @@ import {
   timeAgo,
   prettifyPayload,
 } from "../utils";
-import Tooltip from "@material-ui/core/Tooltip";
-import IconButton from "@material-ui/core/IconButton";
-import FileCopyOutlinedIcon from "@material-ui/icons/FileCopyOutlined";
+import DeleteIcon from "@material-ui/icons/Delete";
+import {Icon} from "@material-ui/core";
+import {Save} from "@material-ui/icons";
 
 function mapStateToProps(state: AppState) {
   return {
@@ -41,6 +46,9 @@ function mapStateToProps(state: AppState) {
 const connector = connect(mapStateToProps, {
   getTaskInfoAsync,
   listQueuesAsync,
+  runScheduledTaskAsync,
+  archiveScheduledTaskAsync,
+  deleteScheduledTaskAsync,
 });
 
 const useStyles = makeStyles((theme) => ({
@@ -98,6 +106,13 @@ function TaskDetailsView(props: Props) {
   useEffect(() => {
     listQueuesAsync();
   }, [listQueuesAsync]);
+
+  // can run task
+  const canRunTask = !['active', 'completed', 'pending'].includes(taskInfo?.state || 'pending');
+  // can archive task
+    const canArchiveTask = !['archived', 'completed'].includes(taskInfo?.state || 'archived');
+  // can delete task
+    const canDeleteTask = ['archived', 'completed'].includes(taskInfo?.state || 'archived');
 
   return (
       <Container maxWidth="lg" className={classes.container}>
@@ -233,26 +248,26 @@ function TaskDetailsView(props: Props) {
                     <Typography variant="subtitle2" className={classes.infoKeyCell}>
                       Payload:{" "}
                       {
-                        taskInfo?.payload
-                        && taskInfo.payload != "non-printable bytes"
-                        && (
-                            <div style={{ marginTop: 5 }}>
-                              <Button
-                                  title={"Copy full payload to clipboard"}
-                                  variant="outlined"
-                                  size="small"
-                                  onClick={() => {
-                                    // 复制到剪贴板
-                                    navigator.clipboard.writeText(prettifyPayload(taskInfo.payload)).then(() => {
-                                      console.log("复制成功");
-                                    },(err) => {
-                                      console.log("复制失败", err);
-                                    });
-                                  }}
-                              >
-                                复制
-                              </Button>
-                            </div>
+                          taskInfo?.payload
+                          && taskInfo.payload !== "non-printable bytes"
+                          && (
+                              <div style={{ marginTop: 5 }}>
+                                <Button
+                                    title={"Copy full payload to clipboard"}
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={() => {
+                                      // 复制到剪贴板
+                                      navigator.clipboard.writeText(prettifyPayload(taskInfo.payload)).then(() => {
+                                        console.log("复制成功");
+                                      },(err) => {
+                                        console.log("复制失败", err);
+                                      });
+                                    }}
+                                >
+                                  Copy
+                                </Button>
+                              </div>
                           )
                       }
                     </Typography>
@@ -272,6 +287,63 @@ function TaskDetailsView(props: Props) {
                       )}
                     </div>
                   </div>
+                  {/*actions*/ taskInfo?.id !== "" && (
+                    <div className={classes.infoRow}>
+                      <Typography variant="subtitle2" className={classes.infoKeyCell}>
+                        Actions:{" "}
+                      </Typography>
+                      <Typography className={classes.infoValueCell}>
+                        <div style={{marginTop: 5}}>
+                          {/*run task*/ canRunTask && (
+                              <Button
+                                  title={"Run this task now"}
+                                  variant="contained"
+                                  color="primary"
+                                  size="small"
+                                  endIcon={<Icon>send</Icon>}
+                                  onClick={() => {
+                                    props.runScheduledTaskAsync(qname, taskId);
+                                  }}
+                              >
+                                Run Now
+                              </Button>
+                          )}
+                          {/* archived task */ canArchiveTask && (
+                                <Button
+                                    title={"Archive this task"}
+                                    variant="contained"
+                                    color="inherit"
+                                    size="small"
+                                    style={ canRunTask ? {marginLeft: 10} : {}}
+                                    startIcon={<Save />}
+                                    onClick={() => {
+                                        props.archiveScheduledTaskAsync(qname, taskId);
+                                    }}
+                                >
+                                    Archive
+                                </Button>
+                            )}
+                            {/* delete task */ canDeleteTask && (
+                                <Button
+                                    title={"Delete this task"}
+                                    variant="contained"
+                                    color="secondary"
+                                    size="small"
+                                    style={ (canRunTask || canArchiveTask) ? {marginLeft: 10} : {}}
+                                    startIcon={<DeleteIcon />}
+                                    onClick={() => {
+                                        props.deleteScheduledTaskAsync(qname, taskId);
+                                    }}
+                                >
+                                    Delete
+                                </Button>
+                            )
+                          }
+                        </div>
+                      </Typography>
+                    </div>
+                  )}
+
                   {
                     /* Completed Task Only */ taskInfo?.state === "completed" && (
                       <>
@@ -297,23 +369,23 @@ function TaskDetailsView(props: Props) {
                             Result Payload:{" "}
                             {
                                 taskInfo?.result.length > 0
-                                &&  taskInfo.result != "non-printable bytes"
+                                &&  taskInfo.result !== "non-printable bytes"
                                 && (
-                                    <div style={{ marginTop: 5 }}>
+                                    <div style={{marginTop: 5}}>
                                       <Button
-                                          title={"Copy full Result Payload to clipboard"}
+                                          title={"Copy full payload to clipboard"}
                                           variant="outlined"
                                           size="small"
                                           onClick={() => {
                                             // 复制到剪贴板
-                                            navigator.clipboard.writeText(prettifyPayload(taskInfo.result)).then(() => {
+                                            navigator.clipboard.writeText(prettifyPayload(taskInfo.payload)).then(() => {
                                               console.log("复制成功");
-                                            },(err) => {
+                                            }, (err) => {
                                               console.log("复制失败", err);
                                             });
                                           }}
                                       >
-                                        复制
+                                        Copy
                                       </Button>
                                     </div>
                                 )
@@ -351,8 +423,7 @@ function TaskDetailsView(props: Props) {
                           </Typography>
                         </div>
                       </>
-                  )
-                  }
+                  )}
                 </Paper>
             )}
             <div className={classes.footer}>
