@@ -7,6 +7,7 @@ import Grid from "@material-ui/core/Grid";
 import Paper from "@material-ui/core/Paper";
 import Typography from "@material-ui/core/Typography";
 import Button from "@material-ui/core/Button";
+import ButtonGroup from '@material-ui/core/ButtonGroup';
 import Alert from "@material-ui/lab/Alert";
 import AlertTitle from "@material-ui/lab/AlertTitle";
 import ArrowBackIcon from "@material-ui/icons/ArrowBack";
@@ -32,6 +33,7 @@ import {
 import DeleteIcon from "@material-ui/icons/Delete";
 import {Icon} from "@material-ui/core";
 import {Save} from "@material-ui/icons";
+import { queueDetailsPath } from "../paths";
 
 function mapStateToProps(state: AppState) {
   return {
@@ -91,7 +93,15 @@ type Props = ConnectedProps<typeof connector>;
 function TaskDetailsView(props: Props) {
   const classes = useStyles();
   const { qname, taskId } = useParams<TaskDetailsRouteParams>();
-  const { getTaskInfoAsync, pollInterval, listQueuesAsync, taskInfo } = props;
+  const {
+    getTaskInfoAsync,
+    pollInterval,
+    listQueuesAsync,
+    runScheduledTaskAsync,
+    archiveScheduledTaskAsync,
+    deleteScheduledTaskAsync,
+    taskInfo
+  } = props;
   const history = useHistory();
 
   const fetchTaskInfo = useMemo(() => {
@@ -109,10 +119,24 @@ function TaskDetailsView(props: Props) {
 
   // can run task
   const canRunTask = !['active', 'completed', 'pending'].includes(taskInfo?.state || 'pending');
+  const runTask = () => {
+    runScheduledTaskAsync(qname, taskId);
+    fetchTaskInfo();
+  }
   // can archive task
-    const canArchiveTask = !['archived', 'completed'].includes(taskInfo?.state || 'archived');
+  const canArchiveTask = !['archived', 'completed'].includes(taskInfo?.state || 'archived');
+  const archiveTask = () => {
+      archiveScheduledTaskAsync(qname, taskId);
+      fetchTaskInfo();
+  }
   // can delete task
-    const canDeleteTask = ['archived', 'completed'].includes(taskInfo?.state || 'archived');
+  const canDeleteTask = ['archived', 'completed'].includes(taskInfo?.state || 'archived');
+  const deleteTask = () => {
+      deleteScheduledTaskAsync(qname, taskId);
+      // to queue list
+      history.push(queueDetailsPath(qname, taskInfo?.state));
+  }
+  const showActionButtons = taskInfo?.id !== "" && ( canRunTask || canArchiveTask || canDeleteTask );
 
   return (
       <Container maxWidth="lg" className={classes.container}>
@@ -287,13 +311,14 @@ function TaskDetailsView(props: Props) {
                       )}
                     </div>
                   </div>
-                  {/*actions*/ taskInfo?.id !== "" && (
+                  {/*actions*/ showActionButtons && (
                     <div className={classes.infoRow}>
                       <Typography variant="subtitle2" className={classes.infoKeyCell}>
                         Actions:{" "}
                       </Typography>
                       <Typography className={classes.infoValueCell}>
                         <div style={{marginTop: 5}}>
+                          <ButtonGroup variant="contained" color="primary" aria-label="contained primary button group">
                           {/*run task*/ canRunTask && (
                               <Button
                                   title={"Run this task now"}
@@ -301,9 +326,7 @@ function TaskDetailsView(props: Props) {
                                   color="primary"
                                   size="small"
                                   endIcon={<Icon>send</Icon>}
-                                  onClick={() => {
-                                    props.runScheduledTaskAsync(qname, taskId);
-                                  }}
+                                  onClick={() => runTask()}
                               >
                                 Run Now
                               </Button>
@@ -314,11 +337,8 @@ function TaskDetailsView(props: Props) {
                                     variant="contained"
                                     color="inherit"
                                     size="small"
-                                    style={ canRunTask ? {marginLeft: 10} : {}}
                                     startIcon={<Save />}
-                                    onClick={() => {
-                                        props.archiveScheduledTaskAsync(qname, taskId);
-                                    }}
+                                    onClick={() => archiveTask()}
                                 >
                                     Archive
                                 </Button>
@@ -329,16 +349,13 @@ function TaskDetailsView(props: Props) {
                                     variant="contained"
                                     color="secondary"
                                     size="small"
-                                    style={ (canRunTask || canArchiveTask) ? {marginLeft: 10} : {}}
                                     startIcon={<DeleteIcon />}
-                                    onClick={() => {
-                                        props.deleteScheduledTaskAsync(qname, taskId);
-                                    }}
+                                    onClick={() => deleteTask()}
                                 >
                                     Delete
                                 </Button>
-                            )
-                          }
+                            )}
+                          </ButtonGroup>
                         </div>
                       </Typography>
                     </div>
