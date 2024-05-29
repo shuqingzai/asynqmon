@@ -42,6 +42,7 @@ interface Props extends ReduxProps {
   queues: string[];
   // Selected queues.
   selectedQueues: string[];
+  selectAll: (checked: boolean) => void;
   addQueue: (qname: string) => void;
   removeQueue: (qname: string) => void;
 }
@@ -624,6 +625,22 @@ function MetricsFetchControls(props: Props) {
               Queues
             </FormLabel>
             <FormGroup>
+              {/* selected all */}
+                <FormControlLabel
+                    control={
+                    <Checkbox
+                        size="small"
+                        checked={props.selectedQueues.length === props.queues.length}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                            props.selectAll(event.target.checked)
+                        }
+                        name="allQueues"
+                        className={classes.checkbox}
+                    />
+                    }
+                    label="All Queues"
+                    classes={{ label: classes.formControlLabel }}
+                />
               {props.queues.map((qname) => (
                 <FormControlLabel
                   key={qname}

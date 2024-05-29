@@ -145,6 +145,11 @@ function MetricsView(props: Props) {
     setSelectedQueues(selectedQueues.filter((q) => q !== qname));
   };
 
+  const handleChangeSelectedAllQueues = (checked: boolean) => {
+    setSelectedQueues(checked ? props.queues : [props.queues[Math.floor(Math.random()*props.queues.length)]]);
+  }
+
+
   React.useEffect(() => {
     listQueuesAsync();
   }, [listQueuesAsync]);
@@ -166,6 +171,7 @@ function MetricsView(props: Props) {
             // If none are selected (e.g. initial state), no filters should apply.
             selectedQueues.length === 0 ? props.queues : selectedQueues
           }
+          selectAll={handleChangeSelectedAllQueues}
           addQueue={handleAddQueue}
           removeQueue={handleRemoveQueue}
         />

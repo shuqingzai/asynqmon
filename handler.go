@@ -40,6 +40,11 @@ type Options struct {
 	// to get the time series data about queue metrics and show them in the web UI.
 	PrometheusAddress string
 
+	// PrometheusCustomQuery specifies the custom query to fetch metrics from Prometheus.
+	//
+	// This field is optional. If this field is set, asynqmon will use this query to fetch metrics from Prometheus.
+	PrometheusCustomQuery string
+
 	// Set ReadOnly to true to restrict user to view-only mode.
 	ReadOnly bool
 }
@@ -205,7 +210,7 @@ func muxRouter(opts Options, rc redis.UniversalClient, inspector *asynq.Inspecto
 	}
 
 	// Time series metrics endpoints.
-	api.HandleFunc("/metrics", newGetMetricsHandlerFunc(http.DefaultClient, opts.PrometheusAddress)).Methods("GET")
+	api.HandleFunc("/metrics", newGetMetricsHandlerFunc(http.DefaultClient, opts.PrometheusAddress, opts.PrometheusCustomQuery)).Methods("GET")
 
 	// Restrict APIs when running in read-only mode.
 	if opts.ReadOnly {

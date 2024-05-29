@@ -43,6 +43,7 @@ type Config struct {
 	// Prometheus related configs
 	EnableMetricsExporter bool
 	PrometheusServerAddr  string
+	PrometheusCustomQuery string
 
 	// Args are the positional (non-flag) command line arguments
 	Args []string
@@ -72,6 +73,7 @@ func parseFlags(progname string, args []string) (cfg *Config, output string, err
 	flags.IntVar(&conf.MaxResultLength, "max-result-length", getEnvOrDefaultInt("MAX_RESULT_LENGTH", 0), "maximum number of utf8 characters printed in the result cell in the Web UI")
 	flags.BoolVar(&conf.EnableMetricsExporter, "enable-metrics-exporter", getEnvOrDefaultBool("ENABLE_METRICS_EXPORTER", false), "enable prometheus metrics exporter to expose queue metrics")
 	flags.StringVar(&conf.PrometheusServerAddr, "prometheus-addr", getEnvDefaultString("PROMETHEUS_ADDR", ""), "address of prometheus server to query time series")
+	flags.StringVar(&conf.PrometheusCustomQuery, "prometheus-custom-query", getEnvDefaultString("PROMETHEUS_CUSTOM_QUERY", ""), "custom prometheus query to fetch metrics")
 	flags.BoolVar(&conf.ReadOnly, "read-only", getEnvOrDefaultBool("READ_ONLY", false), "restrict to read-only mode")
 
 	err = flags.Parse(args)
@@ -149,11 +151,12 @@ func main() {
 	}
 
 	h := asynqmon.New(asynqmon.Options{
-		RedisConnOpt:      redisConnOpt,
-		PayloadFormatter:  asynqmon.PayloadFormatterFunc(payloadFormatterFunc(cfg)),
-		ResultFormatter:   asynqmon.ResultFormatterFunc(resultFormatterFunc(cfg)),
-		PrometheusAddress: cfg.PrometheusServerAddr,
-		ReadOnly:          cfg.ReadOnly,
+		RedisConnOpt:          redisConnOpt,
+		PayloadFormatter:      asynqmon.PayloadFormatterFunc(payloadFormatterFunc(cfg)),
+		ResultFormatter:       asynqmon.ResultFormatterFunc(resultFormatterFunc(cfg)),
+		PrometheusAddress:     cfg.PrometheusServerAddr,
+		PrometheusCustomQuery: cfg.PrometheusCustomQuery,
+		ReadOnly:              cfg.ReadOnly,
 	})
 	defer h.Close()
 

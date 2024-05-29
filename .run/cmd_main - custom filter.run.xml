@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="cmd/main - custom filter" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="asynqmon" />
+    <working_directory value="$PROJECT_DIR$" />
+    <parameters value="--redis-addr='host.docker.internal:16397' --redis-db=5 --prometheus-addr='http://host.docker.internal:19090' --prometheus-custom-query='domain=&quot;sunzi.cool&quot;'" />
+    <kind value="PACKAGE" />
+    <package value="github.com/hibiken/asynqmon/cmd/asynqmon" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$/cmd/asynqmon/main.go" />
+    <method v="2" />
+  </configuration>
+</component>

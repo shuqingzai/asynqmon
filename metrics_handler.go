@@ -33,9 +33,12 @@ type metricsFetchOptions struct {
 	// Optional filter to speicify a list of queues to get metrics for.
 	// Empty list indicates no filter (i.e. get metrics for all queues).
 	queues []string
+
+	// Custom filter to apply in addition to queue filter.
+	customFilter string
 }
 
-func newGetMetricsHandlerFunc(client *http.Client, prometheusAddr string) http.HandlerFunc {
+func newGetMetricsHandlerFunc(client *http.Client, prometheusAddr, customFilter string) http.HandlerFunc {
 	// res is the result of calling a JSON API endpoint.
 	type res struct {
 		query string
@@ -62,6 +65,7 @@ func newGetMetricsHandlerFunc(client *http.Client, prometheusAddr string) http.H
 	// `end_time`:     specifies the end_time in Unix time seconds
 	return func(w http.ResponseWriter, r *http.Request) {
 		opts, err := extractMetricsFetchOptions(r)
+		opts.customFilter = customFilter
 		if err != nil {
 			http.Error(w, fmt.Sprintf("invalid query parameter: %v", err), http.StatusBadRequest)
 			return
@@ -84,8 +88,8 @@ func newGetMetricsHandlerFunc(client *http.Client, prometheusAddr string) http.H
 		ch := make(chan res, len(queries))
 		for _, q := range queries {
 			go func(q string) {
-				url := buildPrometheusURL(prometheusAddr, q, opts)
-				msg, err := fetchPrometheusMetrics(client, url)
+				u := buildPrometheusURL(prometheusAddr, q, opts)
+				msg, err := fetchPrometheusMetrics(client, u)
 				ch <- res{q, msg, err}
 			}(q)
 		}
@@ -164,7 +168,7 @@ func buildPrometheusURL(baseAddr, promQL string, opts *metricsFetchOptions) stri
 	b.WriteString(strings.TrimSuffix(baseAddr, "/"))
 	b.WriteString(prometheusAPIPath)
 	v := url.Values{}
-	v.Add("query", applyQueueFilter(promQL, opts.queues))
+	v.Add("query", applyQueueFilter(promQL, opts.queues, opts.customFilter))
 	v.Add("start", unixTimeString(opts.endTime.Add(-opts.duration)))
 	v.Add("end", unixTimeString(opts.endTime))
 	v.Add("step", strconv.Itoa(int(step(opts).Seconds())))
@@ -173,19 +177,29 @@ func buildPrometheusURL(baseAddr, promQL string, opts *metricsFetchOptions) stri
 	return b.String()
 }
 
-func applyQueueFilter(promQL string, qnames []string) string {
-	if len(qnames) == 0 {
-		return strings.ReplaceAll(promQL, "QUEUE_FILTER", "")
-	}
+func applyQueueFilter(promQL string, qnames []string, customFilter string) string {
 	var b strings.Builder
-	b.WriteString(`queue=~"`)
-	for i, q := range qnames {
-		if i != 0 {
-			b.WriteString("|")
-		}
-		b.WriteString(q)
+
+	// custom filter
+	if customFilter != "" {
+		b.WriteString(customFilter)
 	}
-	b.WriteByte('"')
+
+	// queue filter
+	if len(qnames) > 0 {
+		if customFilter != "" && !strings.HasSuffix(customFilter, "}") {
+			b.WriteString(",")
+		}
+		b.WriteString(`queue=~"`)
+		for i, q := range qnames {
+			if i != 0 {
+				b.WriteString("|")
+			}
+			b.WriteString(q)
+		}
+		b.WriteByte('"')
+	}
+
 	return strings.ReplaceAll(promQL, "QUEUE_FILTER", b.String())
 }
 
